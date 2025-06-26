@@ -125,12 +125,17 @@ io.on('connection', (socket) => {
       timestamp
     };
 
-    // Store message in chat history
-    const chatId = getChatId(from, to);
+    // Store message in chat history using consistent chatId
+    const chatId = getChatId(from, to.userId);
+    console.log(`Storing message with chatId: ${chatId}`);
+    
     if (!messages.has(chatId)) {
       messages.set(chatId, []);
+      console.log(`Created new chat: ${chatId}`);
     }
+    
     messages.get(chatId).push(messageObj);
+    console.log(`Message stored. Total messages in ${chatId}: ${messages.get(chatId).length}`);
     
     log('MESSAGE_RECEIVED', { from, to, message, messageId });
     
@@ -138,9 +143,11 @@ io.on('connection', (socket) => {
     socket.emit('messageAck', { messageId, status: 'received' });
     
     // Check if recipient is online
-    const recipientSocketId = userSockets.get(to);
-    const recipientUser = connectedUsers.get(to);
+    const recipientSocketId = userSockets.get(to.userId);
+    const recipientUser = connectedUsers.get(to.userId);
     const isRecipientOnline = recipientUser && recipientUser.status === 'online';
+    
+    console.log(`Recipient ${to.userId} - SocketId: ${recipientSocketId}, Online: ${isRecipientOnline}`);
     
     if (isRecipientOnline && recipientSocketId) {
       // Deliver message in real-time
@@ -148,11 +155,11 @@ io.on('connection', (socket) => {
       log('MESSAGE_DELIVERED_REALTIME', { to, messageId });
     } else {
       // Buffer message for offline user
-      if (!offlineMessages.has(to)) {
-        offlineMessages.set(to, []);
+      if (!offlineMessages.has(to.userId)) {
+        offlineMessages.set(to.userId, []);
       }
-      offlineMessages.get(to).push(messageObj);
-      log('MESSAGE_BUFFERED', { to, messageId, reason: 'user_offline' });
+      offlineMessages.get(to.userId).push(messageObj);
+      log('MESSAGE_BUFFERED', { to: to.userId, messageId, reason: 'user_offline' });
     }
   });
 
@@ -244,6 +251,8 @@ app.get('/users/:userId', (req, res) => {
 app.get('/messages', (req, res) => {
   const { user1, user2 } = req.query;
   
+  console.log(`Chat history request - user1: ${user1}, user2: ${user2}`);
+  
   if (!user1 || !user2) {
     return res.status(400).json({ 
       error: 'Both user1 and user2 parameters are required' 
@@ -251,9 +260,14 @@ app.get('/messages', (req, res) => {
   }
   
   const chatId = getChatId(user1, user2);
+  console.log(`Looking for chatId: ${chatId}`);
+  console.log(`Available chats:`, Array.from(messages.keys()));
+  
   const chatHistory = messages.get(chatId) || [];
   
-  log('CHAT_HISTORY_REQUESTED', { user1, user2, messageCount: chatHistory.length });
+  console.log(`Found ${chatHistory.length} messages for chat ${chatId}`);
+  
+  log('CHAT_HISTORY_REQUESTED', { user1, user2, chatId, messageCount: chatHistory.length });
   
   res.json({
     chatId,
@@ -331,6 +345,20 @@ app.put('/users/:userId/status', (req, res) => {
   });
 });
 
+// Debug endpoint to see all stored messages
+app.get('/debug/messages', (req, res) => {
+  const allMessages = {};
+  messages.forEach((msgs, chatId) => {
+    allMessages[chatId] = msgs;
+  });
+  
+  res.json({
+    totalChats: messages.size,
+    chats: allMessages,
+    chatIds: Array.from(messages.keys())
+  });
+});
+
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`🚀 Chat server running on port ${PORT}`);
@@ -338,4 +366,5 @@ server.listen(PORT, () => {
   console.log(`🔗 REST API available at http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`👥 Users endpoint: http://localhost:${PORT}/users`);
+  console.log(`🐛 Debug messages: http://localhost:${PORT}/debug/messages`);
 });

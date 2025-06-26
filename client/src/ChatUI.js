@@ -71,6 +71,8 @@ const ChatUI = ({
           handleTyping={handleTyping}
           logs={logs}
           messagesEndRef={messagesEndRef}
+          handleSelectUser={handleSelectUser}
+          allUsers={allUsers}
         />
       );
     default:

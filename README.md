@@ -1,300 +1,470 @@
 # Real-time Chat Application
 
-A full-stack real-time chat application built with Node.js, Socket.IO, and React. Features include real-time messaging, user presence tracking, offline message buffering, and chat history persistence.
+A production-ready, full-stack real-time chat application built with React, Node.js, Express, and Socket.IO. Experience seamless real-time messaging with advanced features like user presence tracking, offline message delivery, and persistent chat history.
 
-## Features
+## 🎥 Demo Video
 
-- **Real-time Messaging**: Instant message delivery using WebSockets
-- **User Presence**: Track online/offline status of users
-- **Offline Message Buffering**: Messages are stored and delivered when users come back online
-- **Chat History**: Persistent message storage with REST API access
-- **Typing Indicators**: See when someone is typing
-- **User Management**: Registration, status tracking, and user lists
-- **RESTful API**: HTTP endpoints for chat history and user management
-- **Responsive UI**: Clean React-based interface with multiple views
+[![Chat Application Demo](https://img.shields.io/badge/▶️%20Watch%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://drive.google.com/file/d/15v5CLLGOouX5-frcGlnShqFjCj3HWdGy/view?usp=sharing)
 
-## Tech Stack
+*Click above to watch the full application demo showcasing real-time messaging, user status tracking, and offline message handling*
 
-### Backend
-- **Node.js**: Runtime environment
-- **Express.js**: Web framework
-- **Socket.IO**: Real-time communication
-- **CORS**: Cross-origin resource sharing
+## 🚀 Features
 
-### Frontend
-- **React**: User interface library
-- **Socket.IO Client**: WebSocket client
-- **CSS/HTML**: Styling and markup
+### Core Messaging
+- **⚡ Real-time messaging** - Instant message delivery using WebSocket technology
+- **💬 Chat history** - Persistent message storage with REST API integration
+- **📱 Cross-platform** - Works seamlessly on desktop and mobile browsers
+- **🔄 Message acknowledgments** - Confirmation of successful message delivery
 
-## Project Structure
+### User Experience
+- **👥 User presence** - Real-time online/offline status with "last seen" timestamps
+- **📫 Offline messaging** - Messages automatically delivered when users come back online
+- **🎨 Modern UI** - Clean, responsive Material-UI design with intuitive navigation
+- **⚙️ Connection management** - Automatic reconnection with graceful error handling
 
+### Advanced Features
+- **📊 Activity logs** - Real-time monitoring and debugging capabilities
+- **🔍 User discovery** - Browse all users with their current status
+- **🚀 Performance optimized** - Efficient message routing and state management
+- **🛡️ Error resilience** - Robust handling of network interruptions and failures
+
+## 📋 System Architecture
+
+### Backend Components
+
+1. **MessageStore** - In-memory storage for chat messages and offline message buffering
+2. **UserManager** - Manages user registration, status tracking, and socket connections
+3. **ChatService** - Handles message routing, delivery, and chat history retrieval
+4. **SocketHandler** - Manages Socket.IO connections and real-time events
+5. **REST API** - Provides endpoints for chat history retrieval
+
+### Frontend Components
+
+1. **ChatApp** - Main application container with Socket.IO integration
+2. **ChatUI** - UI router component managing different views
+3. **RegisterView** - User registration interface
+4. **UserListView** - Display all users with online/offline status
+5. **ChatView** - Real-time chat interface
+
+## 🔧 How System Handles Functional Requirements
+
+### 1. Real-time Chat Between Two Users
+
+**Implementation:**
+- Uses Socket.IO for WebSocket-based real-time communication
+- Messages are instantly delivered to online recipients via `socket.emit('message', messageObj)`
+- Each message includes unique ID, timestamp, sender, recipient, and content
+- Message acknowledgments confirm successful delivery
+
+**Key Components:**
+```javascript
+// Client sends message
+socket.emit("sendMessage", { from: user1, to: user2, message: "Hello!" });
+
+// Server processes and delivers
+await chatService.sendMessage(data);
+socket.emit('messageAck', result);
 ```
-chat-app/
-├── server/
-│   ├── server.js          # Main server file
-│   └── package.json       # Server dependencies
-├── client/
-│   ├── src/
-│   │   ├── ChatApp.js     # Main React component
-│   │   ├── ChatUI.js      # UI component router
-│   │   └── views/         # View components
-│   │       ├── RegisterView.js
-│   │       ├── UserListView.js
-│   │       └── ChatView.js
-│   └── package.json       # Client dependencies
-├── test/
-│   └── demo.js           # Test/demo script
-└── README.md
+
+### 2. User Status Tracking (Online/Offline)
+
+**Implementation:**
+- UserManager tracks all user connections and status changes
+- Real-time status updates broadcast to all connected clients
+- LastSeen timestamps recorded for offline users
+- Visual indicators (green dot for online, last seen time for offline)
+
+**Key Features:**
+```javascript
+// Status update broadcast
+updateUserStatus(userId, status) {
+  const userInfo = { userId, status, lastSeen: getCurrentTimestamp() };
+  this.io.emit('userStatusUpdate', userInfo);
+}
 ```
 
-## Installation
+### 3. Offline Message Handling
+
+**Implementation:**
+- Messages to offline users are buffered in MessageStore
+- When user reconnects, all buffered messages are delivered automatically
+- Buffered messages cleared after successful delivery
+
+**Process Flow:**
+```javascript
+// Buffer message for offline user
+if (!this.userManager.isUserOnline(to.userId)) {
+  this.messageStore.bufferOfflineMessage(to.userId, messageObj);
+}
+
+// Deliver on reconnection
+this.chatService.deliverOfflineMessages(userId, socket);
+```
+
+### 4. Chat History Persistence
+
+**Implementation:**
+- All messages stored in-memory with unique chat IDs
+- REST API endpoint provides chat history retrieval
+- Messages persist during server runtime
+- Chat history loaded when starting new conversations
+
+**API Endpoint:**
+```
+GET /messages?user1=alice&user2=bob
+```
+
+### 5. Connection State Management
+
+**Implementation:**
+- Automatic connection retry with exponential backoff
+- Connection state tracking (connecting, connected, disconnected)
+- Graceful handling of network interruptions
+- User session restoration on reconnection
+
+## 🛠️ Installation & Setup
 
 ### Prerequisites
-- Node.js (v14 or higher)
+- Node.js (>=16.0.0)
 - npm or yarn
 
-### Server Setup
-
-1. Navigate to the server directory:
+### Backend Setup
 ```bash
+# Navigate to server directory
 cd server
-```
 
-2. Install dependencies:
-```bash
-npm install express socket.io cors
-```
+# Install dependencies
+npm install
 
-3. Start the server:
-```bash
-node server.js
-```
-
-The server will start on `http://localhost:3001`
-
-### Client Setup
-
-1. Navigate to the client directory:
-```bash
-cd client
-```
-
-2. Install dependencies:
-```bash
-npm install react react-dom socket.io-client
-```
-
-3. Start the React development server:
-```bash
+# Start development server
+npm run dev
+# or for production
 npm start
 ```
 
-The client will start on `http://localhost:3000`
-
-## Usage
-
-### Basic Flow
-
-1. **Registration**: Enter a username to connect to the chat server
-2. **User List**: View all users and their online/offline status
-3. **Chat**: Select a user to start a conversation
-4. **Real-time**: Messages are delivered instantly to online users
-5. **Offline Support**: Messages are buffered and delivered when users come back online
-
-### User Interface
-
-#### Registration View
-- Enter username
-- Connect to server
-- View connection logs
-
-#### User List View
-- See all registered users
-- Online/offline status indicators
-- Click to start chatting
-
-#### Chat View
-- Real-time messaging
-- Message history
-- Typing indicators
-- Back to user list option
-
-## API Endpoints
-
-### Health Check
-```
-GET /health
-```
-Returns server status and statistics.
-
-### User Management
-```
-GET /users                    # Get all users with status
-GET /users/:userId           # Get specific user status
-PUT /users/:userId/status    # Update user status (testing)
-```
-
-### Chat History
-```
-GET /messages?user1=...&user2=...  # Get chat history between users
-GET /chats                         # Get all active chats
-DELETE /messages?user1=...&user2=... # Clear chat history
-```
-
-### Debug Endpoints
-```
-GET /buffered/:userId        # Get buffered messages for user
-```
-
-## Socket Events
-
-### Client to Server
-- `register` - Register user with server
-- `sendMessage` - Send a message
-- `typing` - Indicate user is typing
-- `stopTyping` - Stop typing indication
-- `getAllUsers` - Request all users list
-- `getOnlineUsers` - Request online users list
-
-### Server to Client
-- `registered` - Registration confirmation
-- `message` - Incoming message
-- `messageAck` - Message delivery acknowledgment
-- `userStatusUpdate` - User status changed
-- `userJoined` - User came online
-- `userLeft` - User went offline
-- `userTyping` - Someone is typing
-- `userStoppedTyping` - Stopped typing
-- `allUsers` - List of all users
-- `onlineUsers` - List of online users
-
-## Testing
-
-### Demo Script
-
-Run the included demo script to test the chat functionality:
-
+### Frontend Setup
 ```bash
-cd test
-node demo.js
+# Navigate to client directory
+cd client
+
+# Install dependencies
+npm install
+
+# Start development server
+npm start
 ```
 
-This will:
-1. Create two test clients (Alice and Bob)
-2. Send real-time messages
-3. Test offline message buffering
-4. Demonstrate reconnection and message delivery
-5. Fetch chat history via REST API
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
 
-### Manual Testing
+## 📖 Usage Examples
 
-1. Open multiple browser tabs/windows
-2. Register different usernames
-3. Test real-time messaging
-4. Test offline scenarios by closing tabs
-5. Verify message delivery when users reconnect
+### 1. Real-time Chat Between Two Users
 
-## Configuration
+**Step 1: Register First User**
+```bash
+# Open browser tab 1
+# Navigate to http://localhost:3000
+# Enter username "Alice"
+# Click "Connect & Register"
+```
 
-### Server Configuration
+**Step 2: Register Second User**
+```bash
+# Open browser tab 2 (incognito/different browser)
+# Navigate to http://localhost:3000
+# Enter username "Bob"
+# Click "Connect & Register"
+```
 
-Default settings in `server.js`:
-- **Port**: 3001 (configurable via `PORT` environment variable)
-- **CORS Origin**: `http://localhost:3000`
-- **Socket.IO Methods**: `["GET", "POST"]`
+**Step 3: Start Chat**
+```bash
+# In Alice's browser:
+# - Click on "Bob" from user list
+# - Type message: "Hello Bob!"
+# - Press Enter or click Send
 
-### Client Configuration
+# In Bob's browser:
+# - Message appears instantly in real-time
+# - Bob can reply: "Hi Alice!"
+# - Conversation continues in real-time
+```
 
-Update server URL in `ChatApp.js`:
+**Expected Behavior:**
+- Messages appear instantly without page refresh
+- Timestamps and message delivery confirmations
+- Typing indicators (if implemented)
+- Message history preserved during session
+
+### 2. Handling Disconnection and Reconnection
+
+**Scenario Setup:**
+```bash
+# Start chat between Alice and Bob (as above)
+# Simulate Alice going offline
+```
+
+**Step 1: Simulate Disconnection**
+```bash
+# In Alice's browser:
+# - Close browser tab or disable network
+# In Bob's browser:
+# - Alice's status changes to "offline"
+# - Shows "Last seen X minutes ago"
+```
+
+**Step 2: Send Messages to Offline User**
+```bash
+# In Bob's browser (Alice is offline):
+# - Send message: "Are you there Alice?"
+# - Send message: "I'll wait for you"
+# - Messages are buffered on server
+```
+
+**Step 3: Reconnection**
+```bash
+# Open new browser tab for Alice
+# Navigate to http://localhost:3000
+# Register as "Alice" again
+```
+
+**Expected Behavior:**
+- Alice receives all buffered messages immediately upon reconnection
+- Bob sees Alice's status change to "online"
+- Chat history is preserved
+- Normal real-time communication resumes
+
+**Test Script:**
 ```javascript
-const connectedSocket = await connectToServer();
-// Change the URL in connectToServer function if needed
-const newSocket = io("http://localhost:3001", {
-  timeout: 5000,
-  forceNew: true,
+// You can test this programmatically
+const socket1 = io('http://localhost:3001');
+const socket2 = io('http://localhost:3001');
+
+// Register users
+socket1.emit('register', 'TestUser1');
+socket2.emit('register', 'TestUser2');
+
+// Disconnect one user
+socket1.disconnect();
+
+// Send message to offline user
+socket2.emit('sendMessage', {
+  from: 'TestUser2',
+  to: { userId: 'TestUser1' },
+  message: 'Offline message test'
 });
+
+// Reconnect and check message delivery
+socket1.connect();
+socket1.emit('register', 'TestUser1');
 ```
 
-## Data Storage
+### 3. Retrieving Chat History via REST API
 
-The application uses in-memory data structures:
+**Direct API Testing:**
+```bash
+# Using curl
+curl "http://localhost:3001/messages?user1=Alice&user2=Bob"
 
-- **messages**: `Map<chatId, Message[]>` - Chat history
-- **userSockets**: `Map<userId, socketId>` - Socket mappings
-- **offlineMessages**: `Map<userId, Message[]>` - Buffered messages
-- **connectedUsers**: `Map<userId, UserInfo>` - User status tracking
+# Using browser
+# Navigate to: http://localhost:3001/messages?user1=Alice&user2=Bob
+```
 
-> **Note**: Data is not persistent across server restarts. For production use, consider integrating with a database like MongoDB or PostgreSQL.
+**Expected Response:**
+```json
+{
+  "chatId": "Alice-Bob",
+  "users": ["Alice", "Bob"],
+  "messages": [
+    {
+      "id": "msg_1640995200000_abc123",
+      "from": "Alice",
+      "to": "Bob",
+      "message": "Hello Bob!",
+      "timestamp": "2024-01-01T10:00:00.000Z"
+    },
+    {
+      "id": "msg_1640995260000_def456",
+      "from": "Bob",
+      "to": "Alice",
+      "message": "Hi Alice!",
+      "timestamp": "2024-01-01T10:01:00.000Z"
+    }
+  ],
+  "totalMessages": 2
+}
+```
 
-## Development
+**Frontend Integration:**
+```javascript
+// Chat history is automatically loaded when starting a conversation
+const fetchChatHistory = async (targetUser) => {
+  const res = await fetch(
+    `http://localhost:3001/messages?user1=${currentUser}&user2=${targetUser}`
+  );
+  const data = await res.json();
+  // Messages displayed in chat interface
+};
+```
 
-### Adding New Features
+**Testing Different Scenarios:**
+```bash
+# Test with no chat history
+curl "http://localhost:3001/messages?user1=NewUser1&user2=NewUser2"
+# Returns: {"messages": [], "totalMessages": 0}
 
-1. **Server-side**: Add socket event handlers in `server.js`
-2. **Client-side**: Add event listeners and UI components
-3. **API**: Add new REST endpoints for data access
+# Test with existing conversation
+curl "http://localhost:3001/messages?user1=Alice&user2=Bob"
+# Returns: Complete message history
 
-### Debugging
+# Test reverse user order (should return same chat)
+curl "http://localhost:3001/messages?user1=Bob&user2=Alice"
+# Returns: Same conversation (normalized chat ID)
+```
 
-- Enable logs display in the UI using the "Show Logs" toggle
-- Check browser console for client-side errors
-- Monitor server console for backend logs
-- Use REST API endpoints to inspect data
+## 🔍 Debugging & Monitoring
 
-## Production Considerations
+### Activity Logs
+The application includes comprehensive logging:
+- Connection/disconnection events
+- Message sending/delivery
+- User status changes
+- Error tracking
 
-- [ ] Replace in-memory storage with persistent database
-- [ ] Add user authentication and authorization
-- [ ] Implement rate limiting
-- [ ] Add message encryption
-- [ ] Set up proper error handling and logging
-- [ ] Configure environment variables
-- [ ] Add unit and integration tests
-- [ ] Set up monitoring and health checks
-- [ ] Implement horizontal scaling with Redis for Socket.IO
+### Log Viewer
+Access logs through the UI:
+```bash
+# In any view of the application
+# Click "Show Logs" button
+# View real-time activity logs
+```
 
-## Troubleshooting
+### Server-side Debugging
+```bash
+# Enable detailed logging
+DEBUG=* npm run dev
+
+# Or check specific components
+DEBUG=socket.io:* npm run dev
+```
+
+## 🚀 Production Deployment
+
+### Docker Support
+```bash
+# Build and run with Docker
+npm run docker:build
+npm run docker:run
+```
+
+### Environment Variables
+```bash
+# Server configuration
+PORT=3001
+NODE_ENV=production
+
+# Frontend configuration  
+REACT_APP_SERVER_URL=http://localhost:3001
+```
+
+## 🧪 Testing
+
+### Automated Tests
+```bash
+# Run backend tests
+cd server && npm test
+
+# Run frontend tests  
+cd client && npm test
+```
+
+### Manual Testing Checklist
+- [ ] User registration and connection
+- [ ] Real-time message delivery
+- [ ] Status tracking (online/offline)
+- [ ] Offline message buffering
+- [ ] Chat history retrieval
+- [ ] Connection recovery
+- [ ] Multiple user support
+- [ ] UI responsiveness
+
+## 📝 API Documentation
+
+### Socket.IO Events
+
+**Client to Server:**
+- `register(userId)` - Register user and establish connection
+- `sendMessage(data)` - Send message to another user
+- `getAllUsers()` - Request complete user list
+- `typing(data)` - Send typing indicator
+- `disconnect()` - Graceful disconnection
+
+**Server to Client:**
+- `registered(userInfo)` - Confirm user registration
+- `message(messageObj)` - Receive new message
+- `userStatusUpdate(userInfo)` - User status changed
+- `userJoined(userInfo)` - New user joined
+- `userLeft(userInfo)` - User disconnected
+- `messageAck(result)` - Message delivery confirmation
+
+### REST Endpoints
+
+```
+GET /messages?user1={userId1}&user2={userId2}
+Response: Chat history between two users
+
+GET /health
+Response: Server health status
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature-name`
+3. Commit changes: `git commit -am 'Add feature'`
+4. Push to branch: `git push origin feature-name`  
+5. Submit pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **Connection Failed**
-   - Check if server is running on port 3001
-   - Verify CORS configuration
-   - Check firewall settings
+**Connection Failed:**
+```bash
+# Check if backend server is running
+curl http://localhost:3001/health
 
-2. **Messages Not Delivered**
-   - Verify both users are registered
-   - Check network connection
-   - Review server logs for errors
+# Verify port availability
+lsof -i :3001
+```
 
-3. **User Status Not Updating**
-   - Check socket connection status
-   - Verify event listeners are properly set up
-   - Review client-side logs
+**Messages Not Delivering:**
+```bash
+# Check Socket.IO connection
+# Open browser developer tools
+# Look for WebSocket connection in Network tab
+```
 
-### Debug Tools
+**Chat History Not Loading:**
+```bash
+# Test REST API directly
+curl "http://localhost:3001/messages?user1=test1&user2=test2"
+```
 
-- Browser Developer Tools (Network, Console tabs)
-- Server logs in terminal
-- REST API endpoints for data inspection
-- Built-in logging system in the application
+### Performance Optimization
 
-## License
+For production use, consider:
+- Implementing Redis for scalable message storage
+- Adding database persistence (MongoDB/PostgreSQL)
+- Load balancing for multiple server instances
+- Message pagination for large chat histories
+- CDN for static asset delivery
 
-This project is open source and available under the [MIT License](LICENSE).
+---
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## Support
-
-For issues and questions:
-- Check the troubleshooting section
-- Review server and client logs
-- Test with the demo script
-- Open an issue on the repository
+Built with ❤️ using React, Node.js, Express, and Socket.IO
